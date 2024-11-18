@@ -9,7 +9,11 @@
 struct queue_t {
 	struct pcb_t * proc[MAX_QUEUE_SIZE];
 	int size;
+	//Begin code
+	#ifdef MLQ_SCHED
 	int time_slot;
+	#endif
+	//End code
 };
 
 void enqueue(struct queue_t * q, struct pcb_t * proc);

@@ -20,7 +20,7 @@ struct pcb_t * dequeue(struct queue_t * q) {
         /* TODO: return a pcb whose prioprity is the highest
          * in the queue [q] and remember to remove it from q
          * */
-	if(!empty(q)){
+	if(q && !empty(q)){
 //gia su pcb dau tien co do uu tien cao nhat
 		struct pcb_t* maxproc = q->proc[0];
 		if(q->size == 1){//neu chi co mot phan tu

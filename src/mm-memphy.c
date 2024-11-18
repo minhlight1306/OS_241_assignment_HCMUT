@@ -6,6 +6,11 @@
 
 #include "mm.h"
 #include <stdlib.h>
+//Begin code
+#include <pthread.h>
+#include <stdio.h>>
+static pthread_mutex_t memphy_lock;
+//End code
 
 /*
  *  MEMPHY_mv_csr - move MEMPHY cursor
@@ -160,8 +165,27 @@ int MEMPHY_dump(struct memphy_struct * mp)
     /*TODO dump memphy contnt mp->storage 
      *     for tracing the memory content
      */
+   //Begin code
+   pthread_mutex_lock(&memphy_lock);
+   printf("\n\Print RAM content:\n"); 
+   fflush(stdout);
+   if(!mp && !mp->storage){
+      pthread_mutex_unlock(&memphy_lock);
+      return -1;
+   }
 
-    return 0;
+   for(int i = 0; i < mp->maxsz; i++){
+      if(mp->storage[i] != (BYTE) 0){
+         printf("\tIndex %d, Frame %d, Content %d\n", i, i / PAGING_PAGESZ, mp->storage[i]);
+         fflush(stdout);
+      }
+   }
+
+   printf("\n"); 
+   fflush(stdout);
+   pthread_mutex_unlock(&memphy_lock);
+   //End code
+   return 0;
 }
 
 int MEMPHY_put_freefp(struct memphy_struct *mp, int fpn)

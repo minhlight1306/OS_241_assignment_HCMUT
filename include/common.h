@@ -83,6 +83,7 @@ struct pcb_t {
 	struct memphy_struct *mram;
 	struct memphy_struct **mswp;
 	struct memphy_struct *active_mswp;
+	struct memphy_struct *active_mram;
 #ifdef MM_PAGING_HEAP_GODOWN
 	uint32_t vmemsz;
 #endif

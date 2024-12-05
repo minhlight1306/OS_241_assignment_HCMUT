@@ -121,6 +121,10 @@ static void * ld_routine(void * args) {
 		while (current_time() < ld_processes.start_time[i]) {
 			next_slot(timer_id);
 		}
+		//begin code
+		proc->mm = malloc(sizeof(struct mm_struct));
+		init_mm(proc->mm, proc);
+		//end code
 #ifdef MM_PAGING
 		proc->mm = malloc(sizeof(struct mm_struct));
 #ifdef MM_PAGING_HEAP_GODOWN
@@ -170,6 +174,7 @@ static void read_config(const char * path) {
 #ifdef MM_PAGING_HEAP_GODOWN
 	vmemsz = 0x300000
 #endif
+
 #else
 	/* Read input config of memory size: MEMRAM and upto 4 MEMSWP (mem swap)
 	 * Format: (size=0 result non-used memswap, must have RAM and at least 1 SWAP)
@@ -178,12 +183,13 @@ static void read_config(const char * path) {
 	fscanf(file, "%d\n", &memramsz);
 	for(sit = 0; sit < PAGING_MAX_MMSWP; sit++)
 		fscanf(file, "%d", &(memswpsz[sit])); 
+	// printf("input proc0\n");
 #ifdef MM_PAGIMG_HEAP_GODOWN
 	fscanf(file, "%d\n", &vmemsz);
 #endif
 
        fscanf(file, "\n"); /* Final character */
-#endif
+#endif 
 #endif
 
 #ifdef MLQ_SCHED
@@ -195,11 +201,14 @@ static void read_config(const char * path) {
 		ld_processes.path[i] = (char*)malloc(sizeof(char) * 100);
 		ld_processes.path[i][0] = '\0';
 		strcat(ld_processes.path[i], "input/proc/");
+		// printf("input proc1\n");
 		char proc[100];
 #ifdef MLQ_SCHED
 		fscanf(file, "%lu %s %lu\n", &ld_processes.start_time[i], proc, &ld_processes.prio[i]);
+		// printf("input proc2\n");
 #else
 		fscanf(file, "%lu %s\n", &ld_processes.start_time[i], proc);
+		printf("input procelse\n");
 #endif
 		strcat(ld_processes.path[i], proc);
 	}

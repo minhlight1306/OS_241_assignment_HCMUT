@@ -8,6 +8,7 @@
 static struct queue_t ready_queue;
 static struct queue_t run_queue;
 static pthread_mutex_t queue_lock;
+static int current_queue=0; //index of current queue
 
 #ifdef MLQ_SCHED
 static struct queue_t mlq_ready_queue[MAX_PRIO];
@@ -29,7 +30,7 @@ void init_scheduler(void) {
 
 	for (i = 0; i < MAX_PRIO; i ++){
 		mlq_ready_queue[i].size = 0;
-		mlq_ready_queue[i].time_slot = MAX_PRIO - i;
+		mlq_ready_queue[i].time_slot = MAX_PRIO - i; //modified
 	}
 #endif
 	ready_queue.size = 0;
@@ -50,30 +51,34 @@ struct pcb_t * get_mlq_proc(void) {
 	 * Remember to use lock to protect the queue.
 	 * */
 	pthread_mutex_lock(&queue_lock);//khoa hang doi
-	for(unsigned long prio = 0; prio < MAX_PRIO; prio++){
-		if(!empty(&mlq_ready_queue[prio]) && mlq_ready_queue[prio].time_slot > 0){
-			proc = dequeue(&mlq_ready_queue[prio]);
-			mlq_ready_queue[prio].time_slot--;
-			break;
+	int i = current_queue;
+	int empty_queue = 0; // number of queue is empty
+	while(empty_queue < MAX_PRIO){
+		current_queue = i;
+		if(!empty(&mlq_ready_queue[i])){ // queue not empty and size != 0
+			if(mlq_ready_queue[i].time_slot > 0){
+				proc = dequeue(&mlq_ready_queue[i]);
+				mlq_ready_queue[i].time_slot--;
+				break;
+			}
 		}
-	}
-	
-//neu khong co tien trinh duoc lay, reset tat ca hang doi
-	if(!proc){
-		for(int prio = 0; prio < MAX_PRIO; prio++){
-			mlq_ready_queue[prio].time_slot = MAX_PRIO - prio;
+		else{
+			empty_queue++;
 		}
+		if(i == MAX_PRIO - 1){
+			for (int j = 0; j < MAX_PRIO; j++) {
+				mlq_ready_queue[j].time_slot = MAX_PRIO - j;
+			}
+		}
+
+		i = (i + 1) % MAX_PRIO;
 	}
-	
-//thuc hien lai thuat toan de lay tien trinh moi
-	for(unsigned long prio = 0; prio < MAX_PRIO; prio++){
-                if(!empty(&mlq_ready_queue[prio]) && mlq_ready_queue[prio].time_slot > 0){
-			proc = dequeue(&mlq_ready_queue[prio]);
-                        mlq_ready_queue[prio].time_slot--;
-                        break;
-        }
+	if(empty_queue == MAX_PRIO){
+		current_queue = (current_queue + 1) % MAX_PRIO;
 	}
+
 	pthread_mutex_unlock(&queue_lock);//mo khoa hang doi
+	// printf("i am getting proc here");
 	return proc;	
 }
 void put_mlq_proc(struct pcb_t * proc) {

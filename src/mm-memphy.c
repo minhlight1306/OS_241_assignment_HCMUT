@@ -8,7 +8,7 @@
 #include <stdlib.h>
 //Begin code
 #include <pthread.h>
-#include <stdio.h>>
+#include <stdio.h>
 static pthread_mutex_t memphy_lock;
 //End code
 
@@ -167,7 +167,7 @@ int MEMPHY_dump(struct memphy_struct * mp)
      */
    //Begin code
    pthread_mutex_lock(&memphy_lock);
-   printf("\n\Print RAM content:\n"); 
+   printf("\nPrint RAM content:\n"); 
    fflush(stdout);
    if(!mp && !mp->storage){
       pthread_mutex_unlock(&memphy_lock);
@@ -176,9 +176,10 @@ int MEMPHY_dump(struct memphy_struct * mp)
 
    for(int i = 0; i < mp->maxsz; i++){
       if(mp->storage[i] != (BYTE) 0){
-         printf("\tIndex %d, Frame %d, Content %d\n", i, i / PAGING_PAGESZ, mp->storage[i]);
+         printf("Index %d, Frame %d, Content %d\n", i, i / PAGING_PAGESZ, mp->storage[i]);
          fflush(stdout);
       }
+      else continue;
    }
 
    printf("\n"); 

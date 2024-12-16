@@ -1,5 +1,5 @@
-# OS_241_assignment_HCMUT\
-# Simple Operating System\
+# OS_241_assignment_HCMUT
+# Simple Operating System
 
 ## Tiên quyết: Phải được thực thi trên Linux. Nếu máy tính là Window, có thể cân nhắc sử dụng ứng dụng cho phép dùng terminal của Linux
 - `Ubuntu` 22.04 LTS

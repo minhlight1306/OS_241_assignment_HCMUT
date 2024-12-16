@@ -10,16 +10,20 @@ typedef uint32_t addr_t;
 //typedef unsigned int uint32_t;
 
 struct pgn_t{
-   int pgn;
-   struct pgn_t *pg_next; 
+   int pgn; // page number
+   uint32_t * pte;
+   struct pgn_t *pg_next;
+   struct mm_struct * caller;
+};
+
+struct global_pg_list{
+   struct pgn_t* head;
 };
 
 /*
  *  Memory region struct
  */
 struct vm_rg_struct {
-   int vmaid;
-
    unsigned long rg_start;
    unsigned long rg_end;
 
@@ -55,8 +59,8 @@ struct mm_struct {
    /* Currently we support a fixed number of symbol */
    struct vm_rg_struct symrgtbl[PAGING_MAX_SYMTBL_SZ];
 
-   /* list of free page */
-   struct pgn_t *fifo_pgn;
+   /* list of free page (global scope) */
+   struct global_pg_list * global_fifo_pgn;
 };
 
 /*
@@ -66,7 +70,7 @@ struct framephy_struct {
    int fpn;
    struct framephy_struct *fp_next;
 
-   /* Resereed for tracking allocated framed */
+   /* Reserved for tracking allocated framed */
    struct mm_struct* owner;
 };
 

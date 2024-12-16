@@ -4,6 +4,8 @@
 /* Define structs and routine could be used by every source files */
 
 #include <stdint.h>
+#include <sys/types.h>
+#include <pthread.h>
 
 #ifndef OSCFG_H
 #include "os-cfg.h"
@@ -26,9 +28,6 @@
 enum ins_opcode_t {
 	CALC,	// Just perform calculation, only use CPU
 	ALLOC,	// Allocate memory
-#ifdef MM_PAGING
-	MALLOC, // Allocate dynamic memory
-#endif
 	FREE,	// Deallocated a memory block
 	READ,	// Write data to a byte on memory
 	WRITE	// Read data from a byte on memory
@@ -52,9 +51,11 @@ struct trans_table_t {
 	struct  {
 		addr_t v_index; // The index of virtual address
 		addr_t p_index; // The index of physical address
-	} table[1 << SECOND_LV_LEN];
+	} table[1 << SECOND_LV_LEN]; // 32
 	int size;
-};
+}; // Can understand as a page containing "size" items,
+// Each of the item contain a pair (v_index, p_index)
+// which is a direct mapping.
 
 /* Mapping virtual addresses and physical ones */
 struct page_table_t {
@@ -62,9 +63,11 @@ struct page_table_t {
 	struct {
 		addr_t v_index;	// Virtual index
 		struct trans_table_t * next_lv;
-	} table[1 << FIRST_LV_LEN];
+	} table[1 << FIRST_LV_LEN]; // 32
 	int size;	// Number of row in the first layer
-};
+}; // Can be understand as a segment table containing "size" pages,
+// Each page containing a segment value "v_index" and a pointer
+// to a page having that segment value.
 
 /* PCB, describe information about a process */
 struct pcb_t {
@@ -73,20 +76,17 @@ struct pcb_t {
 	struct code_seg_t * code;	// Code segment
 	addr_t regs[10]; // Registers, store address of allocated regions
 	uint32_t pc; // Program pointer, point to the next instruction
+	pthread_mutex_t *page_lock; // 1 lock accross pages to make page table accessible one at a time
 #ifdef MLQ_SCHED
 	// Priority on execution (if supported), on-fly aka. changeable
 	// and this vale overwrites the default priority when it existed
-	uint32_t prio;     
+	uint32_t prio;
 #endif
 #ifdef MM_PAGING
 	struct mm_struct *mm;
 	struct memphy_struct *mram;
 	struct memphy_struct **mswp;
 	struct memphy_struct *active_mswp;
-	struct memphy_struct *active_mram;
-#ifdef MM_PAGING_HEAP_GODOWN
-	uint32_t vmemsz;
-#endif
 #endif
 	struct page_table_t * page_table; // Page table
 	uint32_t bp;	// Break pointer
@@ -94,4 +94,3 @@ struct pcb_t {
 };
 
 #endif
-

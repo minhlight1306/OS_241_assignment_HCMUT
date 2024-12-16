@@ -1,7 +1,7 @@
-
 #include "cpu.h"
 #include "mem.h"
 #include "mm.h"
+#include <stdio.h>
 
 int calc(struct pcb_t * proc) {
 	return ((unsigned long)proc & 0UL);
@@ -26,11 +26,11 @@ int read(
 		uint32_t source, // Index of source register
 		uint32_t offset, // Source address = [source] + [offset]
 		uint32_t destination) { // Index of destination register
-	
+
 	BYTE data;
 	if (read_mem(proc->regs[source] + offset, proc,	&data)) {
 		proc->regs[destination] = data;
-		return 0;		
+		return 0;
 	}else{
 		return 1;
 	}
@@ -43,22 +43,22 @@ int write(
 		uint32_t offset) { 	// Destination address =
 					// [destination] + [offset]
 	return write_mem(proc->regs[destination] + offset, proc, data);
-} 
+}
 
 int run(struct pcb_t * proc) {
 	/* Check if Program Counter point to the proper instruction */
 	if (proc->pc >= proc->code->size) {
 		return 1;
 	}
-	
+
 	struct inst_t ins = proc->code->text[proc->pc];
 	proc->pc++;
 	int stat = 1;
 	switch (ins.opcode) {
-	case CALC:
+	case CALC:	// thread-safe
 		stat = calc(proc);
 		break;
-	case ALLOC:
+	case ALLOC:	// not thread-safe ~ __alloc->inc_vma_limit->vm_map_ram
 #ifdef MM_PAGING
 		stat = pgalloc(proc, ins.arg_0, ins.arg_1);
 
@@ -66,26 +66,21 @@ int run(struct pcb_t * proc) {
 		stat = alloc(proc, ins.arg_0, ins.arg_1);
 #endif
 		break;
-#ifdef MM_PAGING
-	case MALLOC:
-		stat = pgmalloc(proc, ins.arg_0, ins.arg_1);
-		break;
-#endif
-	case FREE:
+	case FREE:	// thread-safe
 #ifdef MM_PAGING
 		stat = pgfree_data(proc, ins.arg_0);
 #else
 		stat = free_data(proc, ins.arg_0);
 #endif
 		break;
-	case READ:
+	case READ:	// not thread-safe ~ __read->pg_getval
 #ifdef MM_PAGING
 		stat = pgread(proc, ins.arg_0, ins.arg_1, ins.arg_2);
 #else
 		stat = read(proc, ins.arg_0, ins.arg_1, ins.arg_2);
 #endif
 		break;
-	case WRITE:
+	case WRITE: // not thread-safe ~ __write->pg_setval
 #ifdef MM_PAGING
 		stat = pgwrite(proc, ins.arg_0, ins.arg_1, ins.arg_2);
 #else
@@ -98,5 +93,3 @@ int run(struct pcb_t * proc) {
 	return stat;
 
 }
-
-

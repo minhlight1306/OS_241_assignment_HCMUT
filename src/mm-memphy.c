@@ -6,11 +6,7 @@
 
 #include "mm.h"
 #include <stdlib.h>
-//Begin code
-#include <pthread.h>
 #include <stdio.h>
-static pthread_mutex_t memphy_lock;
-//End code
 
 /*
  *  MEMPHY_mv_csr - move MEMPHY cursor
@@ -124,7 +120,7 @@ int MEMPHY_format(struct memphy_struct *mp, int pagesz)
     if (numfp <= 0)
       return -1;
 
-    /* Init head of free framephy list */ 
+    /* Init head of free framephy list */
     fst = malloc(sizeof(struct framephy_struct));
     fst->fpn = iter;
     mp->free_fp_list = fst;
@@ -162,30 +158,31 @@ int MEMPHY_get_freefp(struct memphy_struct *mp, int *retfpn)
 
 int MEMPHY_dump(struct memphy_struct * mp)
 {
-    /*TODO dump memphy contnt mp->storage 
+    /*TODO dump memphy contnt mp->storage
      *     for tracing the memory content
      */
-   //Begin code
-   pthread_mutex_lock(&memphy_lock);
-   printf("\nPrint RAM content:\n"); 
-   fflush(stdout);
-   if(!mp && !mp->storage){
-      pthread_mutex_unlock(&memphy_lock);
-      return -1;
-   }
 
-   for(int i = 0; i < mp->maxsz; i++){
-      if(mp->storage[i] != (BYTE) 0){
-         printf("Index %d, Frame %d, Content %d\n", i, i / PAGING_PAGESZ, mp->storage[i]);
-         fflush(stdout);
+   for (int i = 0; i < mp->maxsz; i++) {
+      if (mp->storage[i] != 0) {
+         printf("|%d -- %d\n", i, mp->storage[i]);
       }
-      else continue;
    }
 
-   printf("\n"); 
-   fflush(stdout);
-   pthread_mutex_unlock(&memphy_lock);
-   //End code
+    return 0;
+}
+
+int RAM_dump(struct memphy_struct * mram) {
+   int f = 0;
+   struct framephy_struct *fpit = mram->free_fp_list;
+   while (fpit != NULL) {
+      fpit = fpit->fp_next;
+      f++;
+   }
+   printf(" RAM mapping \n");
+   printf(" Number of mapped frames:   %d\n", mram->maxsz / PAGING_PAGESZ - f);
+   printf(" Number of remaining frames:\t%d\n", f);
+   printf("--------------------\n");
+
    return 0;
 }
 
@@ -214,7 +211,6 @@ int init_memphy(struct memphy_struct *mp, int max_size, int randomflg)
    MEMPHY_format(mp,PAGING_PAGESZ);
 
    mp->rdmflg = (randomflg != 0)?1:0;
-   pthread_mutex_init(&memphy_lock, NULL); //khoi tao memphy_lock
 
    if (!mp->rdmflg )   /* Not Ramdom acess device, then it serial device*/
       mp->cursor = 0;

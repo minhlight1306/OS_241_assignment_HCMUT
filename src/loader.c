@@ -11,19 +11,12 @@ static uint32_t avail_pid = 1;
 #define OPT_FREE	"free"
 #define OPT_READ	"read"
 #define OPT_WRITE	"write"
-#ifdef MM_PAGING
-#define OPT_MALLOC	"malloc"
-#endif
 
 static enum ins_opcode_t get_opcode(char * opt) {
 	if (!strcmp(opt, OPT_CALC)) {
 		return CALC;
 	}else if (!strcmp(opt, OPT_ALLOC)) {
 		return ALLOC;
-#ifdef MM_PAGING
-	}else if (!strcmp(opt, OPT_MALLOC)) {
-		return MALLOC;
-#endif
 	}else if (!strcmp(opt, OPT_FREE)) {
 		return FREE;
 	}else if (!strcmp(opt, OPT_READ)) {
@@ -50,7 +43,7 @@ struct pcb_t * load(const char * path) {
 	FILE * file;
 	if ((file = fopen(path, "r")) == NULL) {
 		printf("Cannot find process description at '%s'\n", path);
-		exit(1);		
+		exit(1);
 	}
 	char opcode[10];
 	proc->code = (struct code_seg_t*)malloc(sizeof(struct code_seg_t));
@@ -73,15 +66,6 @@ struct pcb_t * load(const char * path) {
 				&proc->code->text[i].arg_1
 			);
 			break;
-#ifdef MM_PAGING
-		case MALLOC:
-			fscanf(
-				file,
-				"%u %u\n",
-				&proc->code->text[i].arg_0,
-				&proc->code->text[i].arg_1
-			);
-#endif
 		case FREE:
 			fscanf(file, "%u\n", &proc->code->text[i].arg_0);
 			break;
@@ -94,7 +78,7 @@ struct pcb_t * load(const char * path) {
 				&proc->code->text[i].arg_1,
 				&proc->code->text[i].arg_2
 			);
-			break;	
+			break;
 		default:
 			printf("Opcode: %s\n", opcode);
 			exit(1);
@@ -102,6 +86,3 @@ struct pcb_t * load(const char * path) {
 	}
 	return proc;
 }
-
-
-

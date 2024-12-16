@@ -13,17 +13,15 @@
 static int time_slot;
 static int num_cpus;
 static int done = 0;
+static struct global_pg_list * global_fifo;
 
 #ifdef MM_PAGING
 static int memramsz;
 static int memswpsz[PAGING_MAX_MMSWP];
-#ifdef MM_PAGING_HEAP_GODOWN
-static int vmemsz;
-#endif
+pthread_mutex_t page_lock_global;
 
 struct mmpaging_ld_args {
 	/* A dispatched argument struct to compact many-fields passing to loader */
-	int vmemsz;
 	struct memphy_struct *mram;
 	struct memphy_struct **mswp;
 	struct memphy_struct *active_mswp;
@@ -37,7 +35,7 @@ static struct ld_args{
 #ifdef MLQ_SCHED
 	unsigned long * prio;
 #endif
-} ld_processes;
+} ld_processes; // Array of processes
 int num_processes;
 
 struct cpu_args {
@@ -76,7 +74,7 @@ static void * cpu_routine(void * args) {
 			put_proc(proc);
 			proc = get_proc();
 		}
-		
+
 		/* Recheck process status after loading new process */
 		if (proc == NULL && done) {
 			/* No process to run, exit */
@@ -92,7 +90,7 @@ static void * cpu_routine(void * args) {
 				id, proc->pid);
 			time_left = time_slot;
 		}
-		
+
 		/* Run current process */
 		run(proc);
 		time_left--;
@@ -115,22 +113,17 @@ static void * ld_routine(void * args) {
 	printf("ld_routine\n");
 	while (i < num_processes) {
 		struct pcb_t * proc = load(ld_processes.path[i]);
+		proc->page_lock = &page_lock_global; // a
 #ifdef MLQ_SCHED
 		proc->prio = ld_processes.prio[i];
 #endif
 		while (current_time() < ld_processes.start_time[i]) {
 			next_slot(timer_id);
 		}
-		//begin code
-		proc->mm = malloc(sizeof(struct mm_struct));
-		init_mm(proc->mm, proc);
-		//end code
 #ifdef MM_PAGING
 		proc->mm = malloc(sizeof(struct mm_struct));
-#ifdef MM_PAGING_HEAP_GODOWN
-		proc->vmemsz = vmemsz;
-#endif
 		init_mm(proc->mm, proc);
+		proc->mm->global_fifo_pgn = global_fifo;
 		proc->mram = mram;
 		proc->mswp = mswp;
 		proc->active_mswp = active_mswp;
@@ -164,17 +157,13 @@ static void read_config(const char * path) {
 #ifdef MM_FIXED_MEMSZ
 	/* We provide here a back compatible with legacy OS simulatiom config file
          * In which, it have no addition config line for Mema, keep only one line
-	 * for legacy info 
+	 * for legacy info
          *  [time slice] [N = Number of CPU] [M = Number of Processes to be run]
          */
         memramsz    =  0x100000;
         memswpsz[0] = 0x1000000;
 	for(sit = 1; sit < PAGING_MAX_MMSWP; sit++)
 		memswpsz[sit] = 0;
-#ifdef MM_PAGING_HEAP_GODOWN
-	vmemsz = 0x300000
-#endif
-
 #else
 	/* Read input config of memory size: MEMRAM and upto 4 MEMSWP (mem swap)
 	 * Format: (size=0 result non-used memswap, must have RAM and at least 1 SWAP)
@@ -182,14 +171,10 @@ static void read_config(const char * path) {
 	*/
 	fscanf(file, "%d\n", &memramsz);
 	for(sit = 0; sit < PAGING_MAX_MMSWP; sit++)
-		fscanf(file, "%d", &(memswpsz[sit])); 
-	// printf("input proc0\n");
-#ifdef MM_PAGIMG_HEAP_GODOWN
-	fscanf(file, "%d\n", &vmemsz);
-#endif
+		fscanf(file, "%d", &(memswpsz[sit]));
 
        fscanf(file, "\n"); /* Final character */
-#endif 
+#endif
 #endif
 
 #ifdef MLQ_SCHED
@@ -201,14 +186,11 @@ static void read_config(const char * path) {
 		ld_processes.path[i] = (char*)malloc(sizeof(char) * 100);
 		ld_processes.path[i][0] = '\0';
 		strcat(ld_processes.path[i], "input/proc/");
-		// printf("input proc1\n");
 		char proc[100];
 #ifdef MLQ_SCHED
 		fscanf(file, "%lu %s %lu\n", &ld_processes.start_time[i], proc, &ld_processes.prio[i]);
-		// printf("input proc2\n");
 #else
 		fscanf(file, "%lu %s\n", &ld_processes.start_time[i], proc);
-		printf("input procelse\n");
 #endif
 		strcat(ld_processes.path[i], proc);
 	}
@@ -220,6 +202,9 @@ int main(int argc, char * argv[]) {
 		printf("Usage: os [path to configure file]\n");
 		return 1;
 	}
+
+	global_fifo = (struct global_pg_list*)malloc(sizeof(struct global_pg_list));
+	pthread_mutex_init(&page_lock_global, NULL);
 	char path[100];
 	path[0] = '\0';
 	strcat(path, "input/");
@@ -230,7 +215,7 @@ int main(int argc, char * argv[]) {
 	struct cpu_args * args =
 		(struct cpu_args*)malloc(sizeof(struct cpu_args) * num_cpus);
 	pthread_t ld;
-	
+
 	/* Init timer */
 	int i;
 	for (i = 0; i < num_cpus; i++) {
@@ -247,10 +232,11 @@ int main(int argc, char * argv[]) {
 	struct memphy_struct mram;
 	struct memphy_struct mswp[PAGING_MAX_MMSWP];
 
+
 	/* Create MEM RAM */
 	init_memphy(&mram, memramsz, rdmflag);
 
-        /* Create all MEM SWAP */ 
+        /* Create all MEM SWAP */
 	int sit;
 	for(sit = 0; sit < PAGING_MAX_MMSWP; sit++)
 	       init_memphy(&mswp[sit], memswpsz[sit], rdmflag);
@@ -261,9 +247,6 @@ int main(int argc, char * argv[]) {
 	mm_ld_args->timer_id = ld_event;
 	mm_ld_args->mram = (struct memphy_struct *) &mram;
 	mm_ld_args->mswp = (struct memphy_struct**) &mswp;
-#ifdef MM_PAGING_HEAP_GODOWN
-	mm_ld_args->vmemsz = vmemsz;
-#endif
 	mm_ld_args->active_mswp = (struct memphy_struct *) &mswp[0];
 #endif
 
@@ -294,6 +277,3 @@ int main(int argc, char * argv[]) {
 	return 0;
 
 }
-
-
-

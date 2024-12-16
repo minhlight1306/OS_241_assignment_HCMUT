@@ -20,6 +20,7 @@ OS_241_assignment_HCMUT?color=orange&label=size&logo=git&logoColor=orange">
 <br/>
 
 </div>
+
 # Languages & Tools
 
 <img src="https://img.icons8.com/color/96/000000/c-programming.png" align="center" style="margin-left:10px;margin-bottom:5px;" width=70px/><img src="https://img.icons8.com/color/96/000000/linux--v1.png" align="center" style="margin-left:10px;margin-bottom:5px;" width=70px/>

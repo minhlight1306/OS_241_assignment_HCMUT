@@ -10,10 +10,9 @@ FACULTY OF COMPUTER SCIENCE AND ENGINEERING
 [![N|Solid](https://upload.wikimedia.org/wikipedia/commons/thumb/d/de/HCMUT_official_logo.png/238px-HCMUT_official_logo.png)](https://www.hcmut.edu.vn/vi)
 <br />
 <br />
-<img src="https://img.shields.io/github/stars/toanvo4121/CSE-OperatingSystem_Assignments?color=white&logo=github">&emsp;<img src="https://img.shields.io/github/last-commit/minhlight1306/OS_241_assignment_HCMUT?color=blue">
+<img src="https://img.shields.io/github/stars/minhlight1306/OS_241_assignment_HCMUT?color=white&logo=github">&emsp;<img src="https://img.shields.io/github/last-commit/minhlight1306/OS_241_assignment_HCMUT?color=blue">
 <br />
-<img src="https://img.shields.io/github/languages/top/minhlight1306/OS_241_assignment_HCMUT?color=yellow&logo=c&logoColor=yellow">&emsp;<img src="https://img.shields.io/github/repo-size/minhlight1306/
-OS_241_assignment_HCMUT?color=orange&label=size&logo=git&logoColor=orange">
+<img src="https://img.shields.io/github/languages/top/minhlight1306/OS_241_assignment_HCMUT?color=yellow&logo=c&logoColor=yellow">&emsp;<img src="https://img.shields.io/github/repo-size/minhlight1306/OS_241_assignment_HCMUT?color=orange&label=size&logo=git&logoColor=orange">
 <br />
 
 **Simple Operating System / Semester 241**
